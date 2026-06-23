@@ -21,10 +21,10 @@ var builtins = map[string]func(any, []Expr) (any, error){
 	"filter": runFilter,
 	// "some":     runSome,
 	// "every":    runEvery,
-	"entries": runEntries,
-	"keys": runKeys,
-	"values": runValues,
-	"reshape": runReshape,
+	"entries":  runEntries,
+	"keys":     runKeys,
+	"values":   runValues,
+	"reshape":  runReshape,
 	"default":  runDefault,
 	"not":      runNot,
 	"eq":       runEqual,
@@ -165,7 +165,17 @@ func runEntries(val any, args []Expr) (any, error) {
 	var res any
 	switch arr := val.(type) {
 	case []any:
+		val := make([][]any, 0, len(arr))
+		for i, v := range arr {
+			val = append(val, []any{float64(i), v})
+		}
+		res = val
 	case map[string]any:
+		val := make([][]any, 0, len(arr))
+		for k, v := range arr {
+			val = append(val, []any{k, v})
+		}
+		res = val
 	default:
 		return nil, compositeExpected("entries")
 	}
@@ -179,7 +189,17 @@ func runKeys(val any, args []Expr) (any, error) {
 	var res any
 	switch arr := val.(type) {
 	case []any:
+		val := make([]any, 0, len(arr))
+		for i := range arr {
+			val = append(val, float64(i))
+		}
+		res = val
 	case map[string]any:
+		val := make([]any, 0, len(arr))
+		for k := range arr {
+			val = append(val, k)
+		}
+		res = val
 	default:
 		return nil, compositeExpected("keys")
 	}
@@ -193,7 +213,17 @@ func runValues(val any, args []Expr) (any, error) {
 	var res any
 	switch arr := val.(type) {
 	case []any:
+		val := make([]any, 0, len(arr))
+		for i := range arr {
+			val = append(val, arr[i])
+		}
+		res = val
 	case map[string]any:
+		val := make([]any, 0, len(arr))
+		for k := range arr {
+			val = append(val, arr[k])
+		}
+		res = val
 	default:
 		return nil, compositeExpected("values")
 	}

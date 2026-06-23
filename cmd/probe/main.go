@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/midbel/codecs/json"
-	"github.com/midbel/probe"
 	"github.com/midbel/codecs/xml"
+	"github.com/midbel/probe"
 )
 
 func main() {
