@@ -12,42 +12,44 @@ func invalidArgs(msg string, n int) error {
 }
 
 var builtins = map[string]func(any, []Expr) (any, error){
-	"as":     runAs,
-	"len":    runLen,
-	"at":     runAt,
-	"first":  runFirst,
-	"last":   runLast,
-	"range":  runRange,
-	"filter": runFilter,
-	// "some":     runSome,
-	// "every":    runEvery,
-	"entries":  runEntries,
-	"keys":     runKeys,
-	"values":   runValues,
-	"flatten":  runFlatten,
-	"reshape":  runReshape,
-	"default":  runDefault,
-	"not":      runNot,
-	"eq":       runEqual,
-	"ne":       runNotEqual,
-	"lt":       runLesserThan,
-	"le":       runLesserEq,
-	"gt":       runGreaterThan,
-	"ge":       runGreaterEq,
-	"between":  runBetween,
-	"literal":  runLiteral,
-	"number":   runNumber,
-	"string":   runString,
-	"boolean":  runBoolean,
-	"object":   runObject,
-	"array":    runArray,
-	"in":       runIn,
-	"ifeq":     runIfEqual,
-	"ifne":     runIfNotEqual,
-	"ifexists": runIfExists,
-	"exists":   runExists,
-	"empty":    runEmpty,
-	"null":     runNull,
+	"as":         runAs,
+	"len":        runLen,
+	"at":         runAt,
+	"first":      runFirst,
+	"last":       runLast,
+	"range":      runRange,
+	"filter":     runFilter,
+	"some":       runSome,
+	"every":      runEvery,
+	"entries":    runEntries,
+	"keys":       runKeys,
+	"values":     runValues,
+	"flatten":    runFlatten,
+	"reshape":    runReshape,
+	"zip":        runZip,
+	"ziplongest": runZipLongest,
+	"default":    runDefault,
+	"not":        runNot,
+	"eq":         runEqual,
+	"ne":         runNotEqual,
+	"lt":         runLesserThan,
+	"le":         runLesserEq,
+	"gt":         runGreaterThan,
+	"ge":         runGreaterEq,
+	"between":    runBetween,
+	"literal":    runLiteral,
+	"number":     runNumber,
+	"string":     runString,
+	"boolean":    runBoolean,
+	"object":     runObject,
+	"array":      runArray,
+	"in":         runIn,
+	"ifeq":       runIfEqual,
+	"ifne":       runIfNotEqual,
+	"ifexists":   runIfExists,
+	"exists":     runExists,
+	"empty":      runEmpty,
+	"null":       runNull,
 }
 
 // :as()
@@ -159,6 +161,18 @@ func runFilter(val any, args []Expr) (any, error) {
 	return list, nil
 }
 
+// returns val if some values in val pass the predicate otherwise discarded is returned
+// not the same as classic "some" where a boolean value is returned if some values pass
+func runSome(val any, args []Expr) (any, error) {
+	return nil, nil
+}
+
+// returns val if all values in val pass the predicate otherwise discarded is returned
+// not the same as classic "all" where a boolean value is returned if all values pass
+func runEvery(val any, args []Expr) (any, error) {
+	return nil, nil
+}
+
 func runEntries(val any, args []Expr) (any, error) {
 	if len(args) != 0 {
 		return nil, invalidArgs("entries takes not argument(s)", len(args))
@@ -235,12 +249,54 @@ func runFlatten(val any, args []Expr) (any, error) {
 	if len(args) > 1 {
 		return nil, invalidArgs("flatten takes zero or one argument", len(args))
 	}
-	return nil, nil	
+	var maxDepth int
+	if len(args) == 1 {
+		md, err := getIntFromExpr(args[0])
+		if err != nil {
+			return nil, err
+		}
+		maxDepth = md
+	}
+	var (
+		flat func(any, int)
+		tmp  []any
+	)
+
+	flat = func(in any, depth int) {
+		switch in := in.(type) {
+		case []any:
+			for i := range in {
+				if maxDepth > 0 && depth >= maxDepth {
+					tmp = append(tmp, in[i])
+				} else {
+					flat(in[i], depth+1)
+				}
+			}
+		default:
+			tmp = append(tmp, in)
+		}
+	}
+	flat(val, 0)
+	return tmp, nil
 }
 
 func runReshape(val any, args []Expr) (any, error) {
 	if len(args) != 2 {
 		return nil, invalidArgs("reshape takes two arguments", len(args))
+	}
+	return nil, nil
+}
+
+func runZip(val any, args []Expr) (any, error) {
+	if len(args) != 2 {
+		return nil, invalidArgs("zip takes no argument(s)", len(args))
+	}
+	return nil, nil
+}
+
+func runZipLongest(val any, args []Expr) (any, error) {
+	if len(args) != 2 {
+		return nil, invalidArgs("ziplongest takes no argument(s)", len(args))
 	}
 	return nil, nil
 }

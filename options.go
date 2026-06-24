@@ -22,6 +22,8 @@ func ParseZipMode(str string) (ZipMode, error) {
 		mode = ZipLongest
 	case "strict":
 		mode = ZipStrict
+	case "no":
+		mode = NoZip
 	default:
 		return mode, fmt.Errorf("unsupported zip mode given: %s", str)
 	}

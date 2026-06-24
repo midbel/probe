@@ -81,7 +81,7 @@ func clean(in any) any {
 			if isDiscard(in[k]) {
 				continue
 			}
-			in[k] = clean(in[k])
+			tmp[k] = clean(in[k])
 		}
 		return tmp
 	default:
