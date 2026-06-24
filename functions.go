@@ -174,7 +174,7 @@ func runFilter(val any, args []Expr) (any, error) {
 			return nil, predicateExpected("filter")
 		}
 		if ok := slices.Contains(predicables, c.Ident); !ok {
-			return nil, predicateExpected("filter")
+			return nil, predicateExpected(c.Ident)
 		}
 		exec := builtins[c.Ident]
 		keep = func(val any) bool {
@@ -208,6 +208,22 @@ func runSome(val any, args []Expr) (any, error) {
 	var valid PredicateFunc
 	if len(args) == 0 {
 		valid = isDefined
+	} else {
+		c, ok := args[0].(call)
+		if !ok {
+			return nil, predicateExpected("some")
+		}
+		if ok := slices.Contains(predicables, c.Ident); !ok {
+			return nil, predicateExpected(c.Ident)
+		}
+		exec := builtins[c.Ident]
+		valid = func(val any) bool {
+			ret, err := exec(val, c.Args)
+			if err != nil {
+				return false
+			}
+			return !isDiscard(ret)
+		}
 	}
 	arr, ok := val.([]any)
 	if !ok {
@@ -230,6 +246,22 @@ func runEvery(val any, args []Expr) (any, error) {
 	var valid PredicateFunc
 	if len(args) == 0 {
 		valid = isDefined
+	} else {
+		c, ok := args[0].(call)
+		if !ok {
+			return nil, predicateExpected("every")
+		}
+		if ok := slices.Contains(predicables, c.Ident); !ok {
+			return nil, predicateExpected(c.Ident)
+		}
+		exec := builtins[c.Ident]
+		valid = func(val any) bool {
+			ret, err := exec(val, c.Args)
+			if err != nil {
+				return false
+			}
+			return !isDiscard(ret)
+		}
 	}
 	arr, ok := val.([]any)
 	if !ok {
