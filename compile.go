@@ -295,7 +295,9 @@ func (c *compiler) compileExpr() (Expr, error) {
 }
 
 func (c *compiler) compileCall() (Expr, error) {
-	c.next()
+	if c.is(Call) {
+		c.next()
+	}
 	if !c.is(Ident) {
 		return nil, syntaxError("selector name expected")
 	}
@@ -308,11 +310,23 @@ func (c *compiler) compileCall() (Expr, error) {
 	}
 	c.next()
 	for !c.done() && !c.is(EndGrp) {
-		v, err := c.compileValue()
+		var (
+			expr Expr
+			err  error
+		)
+		if c.is(Ident) {
+			expr, err = c.compileCall()
+		} else {
+			val, err1 := c.compileValue()
+			if err1 == nil {
+				expr = val.(Expr)
+			}
+			err = err1
+		}
 		if err != nil {
 			return nil, err
 		}
-		apply.Args = append(apply.Args, v.(Expr))
+		apply.Args = append(apply.Args, expr)
 		switch {
 		case c.is(Comma):
 			c.next()
