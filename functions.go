@@ -24,6 +24,7 @@ var builtins = map[string]func(any, []Expr) (any, error){
 	"entries":  runEntries,
 	"keys":     runKeys,
 	"values":   runValues,
+	"flatten":  runFlatten,
 	"reshape":  runReshape,
 	"default":  runDefault,
 	"not":      runNot,
@@ -165,13 +166,13 @@ func runEntries(val any, args []Expr) (any, error) {
 	var res any
 	switch arr := val.(type) {
 	case []any:
-		val := make([][]any, 0, len(arr))
+		val := make([]any, 0, len(arr))
 		for i, v := range arr {
 			val = append(val, []any{float64(i), v})
 		}
 		res = val
 	case map[string]any:
-		val := make([][]any, 0, len(arr))
+		val := make([]any, 0, len(arr))
 		for k, v := range arr {
 			val = append(val, []any{k, v})
 		}
@@ -228,6 +229,13 @@ func runValues(val any, args []Expr) (any, error) {
 		return nil, compositeExpected("values")
 	}
 	return res, nil
+}
+
+func runFlatten(val any, args []Expr) (any, error) {
+	if len(args) > 1 {
+		return nil, invalidArgs("flatten takes zero or one argument", len(args))
+	}
+	return nil, nil	
 }
 
 func runReshape(val any, args []Expr) (any, error) {
