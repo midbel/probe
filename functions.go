@@ -3,6 +3,7 @@ package probe
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 var errArgument = errors.New("invalid number of argument given")
@@ -11,45 +12,66 @@ func invalidArgs(msg string, n int) error {
 	return fmt.Errorf("%w: %s - %d given", errArgument, msg, n)
 }
 
-var builtins = map[string]func(any, []Expr) (any, error){
-	"as":         runAs,
-	"len":        runLen,
-	"at":         runAt,
-	"first":      runFirst,
-	"last":       runLast,
-	"range":      runRange,
-	"filter":     runFilter,
-	"some":       runSome,
-	"every":      runEvery,
-	"entries":    runEntries,
-	"keys":       runKeys,
-	"values":     runValues,
-	"flatten":    runFlatten,
-	"reshape":    runReshape,
-	"zip":        runZip,
-	"ziplongest": runZipLongest,
-	"default":    runDefault,
-	"not":        runNot,
-	"eq":         runEqual,
-	"ne":         runNotEqual,
-	"lt":         runLesserThan,
-	"le":         runLesserEq,
-	"gt":         runGreaterThan,
-	"ge":         runGreaterEq,
-	"between":    runBetween,
-	"literal":    runLiteral,
-	"number":     runNumber,
-	"string":     runString,
-	"boolean":    runBoolean,
-	"object":     runObject,
-	"array":      runArray,
-	"in":         runIn,
-	"ifeq":       runIfEqual,
-	"ifne":       runIfNotEqual,
-	"ifexists":   runIfExists,
-	"exists":     runExists,
-	"empty":      runEmpty,
-	"null":       runNull,
+var builtins map[string]func(any, []Expr) (any, error)
+
+var predicables = []string{
+	"eq",
+	"ne",
+	"lt",
+	"le",
+	"gt",
+	"ge",
+	"between",
+	"literal",
+	"number",
+	"string",
+	"boolean",
+	"object",
+	"array",
+	"in",
+}
+
+func init() {
+	builtins = map[string]func(any, []Expr) (any, error){
+		"as":         runAs,
+		"len":        runLen,
+		"at":         runAt,
+		"first":      runFirst,
+		"last":       runLast,
+		"range":      runRange,
+		"filter":     runFilter,
+		"some":       runSome,
+		"every":      runEvery,
+		"entries":    runEntries,
+		"keys":       runKeys,
+		"values":     runValues,
+		"flatten":    runFlatten,
+		"reshape":    runReshape,
+		"zip":        runZip,
+		"ziplongest": runZipLongest,
+		"default":    runDefault,
+		"not":        runNot,
+		"eq":         runEqual,
+		"ne":         runNotEqual,
+		"lt":         runLesserThan,
+		"le":         runLesserEq,
+		"gt":         runGreaterThan,
+		"ge":         runGreaterEq,
+		"between":    runBetween,
+		"literal":    runLiteral,
+		"number":     runNumber,
+		"string":     runString,
+		"boolean":    runBoolean,
+		"object":     runObject,
+		"array":      runArray,
+		"in":         runIn,
+		"ifeq":       runIfEqual,
+		"ifne":       runIfNotEqual,
+		"ifexists":   runIfExists,
+		"exists":     runExists,
+		"empty":      runEmpty,
+		"null":       runNull,
+	}
 }
 
 // :as()
@@ -151,7 +173,17 @@ func runFilter(val any, args []Expr) (any, error) {
 		if !ok {
 			return nil, predicateExpected("filter")
 		}
-		_ = c
+		if ok := slices.Contains(predicables, c.Ident); !ok {
+			return nil, predicateExpected("filter")
+		}
+		exec := builtins[c.Ident]
+		keep = func(val any) bool {
+			ret, err := exec(val, c.Args)
+			if err != nil {
+				return false
+			}
+			return !isDiscard(ret)
+		}
 	}
 	arr, ok := val.([]any)
 	if !ok {
