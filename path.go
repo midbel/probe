@@ -139,6 +139,8 @@ func (p alternative) All(in any) iter.Seq2[any, error] {
 	return it
 }
 
+type PredicateFunc func(any) bool
+
 type call struct {
 	Ident string
 	Args  []Expr
@@ -410,6 +412,10 @@ func castToNumber(val any) (any, error) {
 	default:
 		return 0, ErrType
 	}
+}
+
+func predicateExpected(fn string) error {
+	return fmt.Errorf("%s: expected predicate function", fn)
 }
 
 func arrayExpected(fn string) error {

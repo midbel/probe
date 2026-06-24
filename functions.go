@@ -143,11 +143,15 @@ func runFilter(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("filter takes one argument", len(args))
 	}
-	var keep func(any, []Expr) bool
+	var keep PredicateFunc
 	if len(args) == 0 {
-		keep = func(val any, _ []Expr) bool {
-			return isDefined(val)
+		keep = isDefined
+	} else {
+		c, ok := args[0].(call)
+		if !ok {
+			return nil, predicateExpected("filter")
 		}
+		_ = c
 	}
 	arr, ok := val.([]any)
 	if !ok {
@@ -169,11 +173,9 @@ func runSome(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("some takes one argument", len(args))
 	}
-	var valid func(any, []Expr) bool
+	var valid PredicateFunc
 	if len(args) == 0 {
-		valid = func(val any, _ []Expr) bool {
-			return isDefined(val)
-		}
+		valid = isDefined
 	}
 	arr, ok := val.([]any)
 	if !ok {
@@ -193,11 +195,9 @@ func runEvery(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("every takes one argument", len(args))
 	}
-	var valid func(any, []Expr) bool
+	var valid PredicateFunc
 	if len(args) == 0 {
-		valid = func(val any, _ []Expr) bool {
-			return isDefined(val)
-		}
+		valid = isDefined
 	}
 	arr, ok := val.([]any)
 	if !ok {
