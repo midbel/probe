@@ -3,7 +3,6 @@ package probe
 import (
 	"errors"
 	"fmt"
-	"slices"
 )
 
 var errArgument = errors.New("invalid number of argument given")
@@ -49,6 +48,7 @@ func init() {
 		"reshape":    runReshape,
 		"zip":        runZip,
 		"ziplongest": runZipLongest,
+		"reverse":    runReverse,
 		"default":    runDefault,
 		"not":        runNot,
 		"eq":         runEqual,
@@ -165,38 +165,7 @@ func runFilter(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("filter takes one argument", len(args))
 	}
-	var keep PredicateFunc
-	if len(args) == 0 {
-		keep = isDefined
-	} else {
-		c, ok := args[0].(call)
-		if !ok {
-			return nil, predicateExpected("filter")
-		}
-		if ok := slices.Contains(predicables, c.Ident); !ok {
-			return nil, predicateExpected(c.Ident)
-		}
-		exec := builtins[c.Ident]
-		keep = func(val any) bool {
-			ret, err := exec(val, c.Args)
-			if err != nil {
-				return false
-			}
-			return !isDiscard(ret)
-		}
-	}
-	arr, ok := val.([]any)
-	if !ok {
-		return nil, arrayExpected("array")
-	}
-	list := make([]any, 0, len(arr))
-	for i := range arr {
-		if !keep(arr[i]) {
-			continue
-		}
-		list = append(list, arr[i])
-	}
-	return list, nil
+	return discarded, nil
 }
 
 // returns val if some values in val pass the predicate otherwise discarded is returned
@@ -204,35 +173,6 @@ func runFilter(val any, args []Expr) (any, error) {
 func runSome(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("some takes one argument", len(args))
-	}
-	var valid PredicateFunc
-	if len(args) == 0 {
-		valid = isDefined
-	} else {
-		c, ok := args[0].(call)
-		if !ok {
-			return nil, predicateExpected("some")
-		}
-		if ok := slices.Contains(predicables, c.Ident); !ok {
-			return nil, predicateExpected(c.Ident)
-		}
-		exec := builtins[c.Ident]
-		valid = func(val any) bool {
-			ret, err := exec(val, c.Args)
-			if err != nil {
-				return false
-			}
-			return !isDiscard(ret)
-		}
-	}
-	arr, ok := val.([]any)
-	if !ok {
-		return nil, arrayExpected("array")
-	}
-	for i := range arr {
-		if valid(arr[i]) {
-			return val, nil
-		}
 	}
 	return discarded, nil
 }
@@ -243,36 +183,7 @@ func runEvery(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("every takes one argument", len(args))
 	}
-	var valid PredicateFunc
-	if len(args) == 0 {
-		valid = isDefined
-	} else {
-		c, ok := args[0].(call)
-		if !ok {
-			return nil, predicateExpected("every")
-		}
-		if ok := slices.Contains(predicables, c.Ident); !ok {
-			return nil, predicateExpected(c.Ident)
-		}
-		exec := builtins[c.Ident]
-		valid = func(val any) bool {
-			ret, err := exec(val, c.Args)
-			if err != nil {
-				return false
-			}
-			return !isDiscard(ret)
-		}
-	}
-	arr, ok := val.([]any)
-	if !ok {
-		return nil, arrayExpected("array")
-	}
-	for i := range arr {
-		if !valid(arr[i]) {
-			return discarded, nil
-		}
-	}
-	return val, nil
+	return discarded, nil
 }
 
 func runEntries(val any, args []Expr) (any, error) {
@@ -359,48 +270,68 @@ func runFlatten(val any, args []Expr) (any, error) {
 		}
 		maxDepth = md
 	}
-	var (
-		flat func(any, int)
-		tmp  []any
-	)
-
-	flat = func(in any, depth int) {
-		switch in := in.(type) {
-		case []any:
-			for i := range in {
-				if maxDepth > 0 && depth >= maxDepth {
-					tmp = append(tmp, in[i])
-				} else {
-					flat(in[i], depth+1)
-				}
-			}
-		default:
-			tmp = append(tmp, in)
-		}
-	}
-	flat(val, 0)
-	return tmp, nil
+	return flatten(val, maxDepth), nil
 }
 
+// :reshape(rows, cols)
 func runReshape(val any, args []Expr) (any, error) {
 	if len(args) != 2 {
 		return nil, invalidArgs("reshape takes two arguments", len(args))
 	}
-	return nil, nil
+	rows, err := getIntFromExpr(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if rows <= 0 {
+		return nil, fmt.Errorf("reshape: rows must be a positive integer")
+	}
+	cols, err := getIntFromExpr(args[1])
+	if err != nil {
+		return nil, err
+	}
+	if cols <= 0 {
+		return nil, fmt.Errorf("reshape: cols must be a positive integer")
+	}
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("reshape")
+	}
+	return reshape(arr, rows, cols), nil
 }
 
+// :zip()
 func runZip(val any, args []Expr) (any, error) {
-	if len(args) != 2 {
+	if len(args) != 0 {
 		return nil, invalidArgs("zip takes no argument(s)", len(args))
 	}
-	return nil, nil
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("zip")
+	}
+	return zip(arr), nil
 }
 
+// :ziplongest()
 func runZipLongest(val any, args []Expr) (any, error) {
-	if len(args) != 2 {
+	if len(args) != 0 {
 		return nil, invalidArgs("ziplongest takes no argument(s)", len(args))
 	}
-	return nil, nil
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("ziplongest")
+	}
+	return zipLongest(arr), nil
+}
+
+func runReverse(val any, args []Expr) (any, error) {
+	if len(args) != 0 {
+		return nil, invalidArgs("reverse takes no argument(s)", len(args))
+	}
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("reverse")
+	}
+	return reverse(arr), nil
 }
 
 // :first()
