@@ -13,9 +13,10 @@ import (
 
 func main() {
 	var (
-		decode func(io.Reader) (any, error) = json.Decode
-		encode func(*probe.Result)          = writeJSON
-		opts   probe.Options
+		decode   func(io.Reader) (any, error) = json.Decode
+		encode   func(*probe.Result)          = writeJSON
+		discover bool
+		opts     probe.Options
 	)
 	flag.Func("z", "zip mode", func(str string) error {
 		m, err := probe.ParseZipMode(str)
@@ -58,6 +59,7 @@ func main() {
 		}
 		return nil
 	})
+	flag.BoolVar(&discover, "d", false, "discover")
 	flag.Parse()
 
 	r, err := os.Open(flag.Arg(0))
@@ -70,12 +72,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "decode: %s\n", err)
 		os.Exit(1)
 	}
-	res, err := probe.Execute(flag.Arg(1), in, &opts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "traverse: %s\n", err)
-		os.Exit(1)
+
+	if discover {
+		paths := probe.Discover(in)
+		for _, p := range paths {
+			fmt.Println(p.Path)
+		}
+	} else {
+		res, err := probe.Execute(flag.Arg(1), in, &opts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "traverse: %s\n", err)
+			os.Exit(1)
+		}
+		encode(res)
 	}
-	encode(res)
 }
 
 func writeJSON(in *probe.Result) {
