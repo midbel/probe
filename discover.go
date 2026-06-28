@@ -18,6 +18,7 @@ type PathInfo struct {
 
 func Discover(in any) []PathInfo {
 	root := PathInfo{
+		Path:  ".",
 		Depth: 0,
 	}
 	return discover(in, root)
@@ -48,8 +49,8 @@ func discoverObject(in map[string]any, parent PathInfo) []PathInfo {
 		}
 		var (
 			root = PathInfo{
-				Path: k,
-				Depth: parent.Depth+1,
+				Path:  k,
+				Depth: parent.Depth + 1,
 			}
 			others = discover(v, root)
 		)
@@ -76,6 +77,9 @@ func discoverArray(in []any, parent PathInfo) []PathInfo {
 func joinPath(parent, child string) string {
 	if parent == "" {
 		return child
+	}
+	if parent == "." {
+		return parent + child
 	}
 	return parent + "." + child
 }
