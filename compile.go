@@ -294,6 +294,17 @@ func (c *compiler) compileExpr() (Expr, error) {
 	return step, nil
 }
 
+func (c *compiler) compileLambda() (Expr, error) {
+	c.next()
+	expr, err := c.compileExpr()
+	if err == nil {
+		expr = lambda{
+			expr: expr,
+		}
+	}
+	return expr, err
+}
+
 func (c *compiler) compileCall() (Expr, error) {
 	c.next()
 	if !c.is(Ident) {
@@ -308,11 +319,23 @@ func (c *compiler) compileCall() (Expr, error) {
 	}
 	c.next()
 	for !c.done() && !c.is(EndGrp) {
-		expr, err := c.compileValue()
+		var (
+			expr Expr
+			err  error
+		)
+		if c.is(Arrow) {
+			expr, err = c.compileLambda()
+		} else {
+			val, err1 := c.compileValue()
+			if err1 != nil {
+				return nil, err1
+			}
+			expr = val.(Expr)
+		}
 		if err != nil {
 			return nil, err
 		}
-		apply.Args = append(apply.Args, expr.(Expr))
+		apply.Args = append(apply.Args, expr)
 		switch {
 		case c.is(Comma):
 			c.next()
@@ -399,6 +422,47 @@ const (
 type token struct {
 	Literal string
 	Type    rune
+}
+
+func (t token) String() string {
+	var prefix string
+	switch t.Type {
+	case Invalid:
+		prefix = "invalid"
+	case Ident:
+		prefix = "identifier"
+	case Number:
+		prefix = "number"
+	case String:
+		prefix = "string"
+	case Boolean:
+		prefix = "boolean"
+	case Null:
+		return "<null>"
+	case Dot:
+		return "<dot>"
+	case Deep:
+		return "<deep>"
+	case Arrow:
+		return "<arrow>"
+	case Root:
+		return "<root>"
+	case Call:
+		return "<call>"
+	case Comma:
+		return "<comma>"
+	case Pipe:
+		return "<alternative>"
+	case BegGrp:
+		return "<beg-grp>"
+	case EndGrp:
+		return "<end-grp>"
+	case Eof:
+		return "<eof>"
+	default:
+		prefix = "unknown"
+	}
+	return fmt.Sprintf("%s(%s)", prefix, t.Literal)
 }
 
 type scanner struct {

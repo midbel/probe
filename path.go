@@ -184,6 +184,14 @@ func (s literal) collect(_ any) (any, error) {
 	return s.value, nil
 }
 
+type lambda struct {
+	expr Expr
+}
+
+func (a lambda) Eval(_ any) (any, error) {
+	return nil, nil
+}
+
 func traverse(e Expr, in any) (any, error) {
 	if isMissing(in) {
 		return in, nil

@@ -48,9 +48,6 @@ func TestCompile(t *testing.T) {
 			Input: "$.foo:eq(100) | $.bar:ifexists(\"fst\", \"snd\")",
 		},
 		{
-			Input: "$.foo:some(eq(10))",
-		},
-		{
 			Input:   "$.foo:eq",
 			Invalid: true,
 		},
@@ -84,6 +81,9 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			Input: "$.foo => ($.bar => $.foo, $.bar)",
+		},
+		{
+			Input: "$.foo:filter(=> .:gt(7))",
 		},
 	}
 	for _, c := range tests {
