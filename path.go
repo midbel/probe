@@ -185,7 +185,7 @@ func (s literal) collect(_ any) (any, error) {
 }
 
 type lambda struct {
-	expr Expr
+	expr Path
 }
 
 func (a lambda) Eval(_ any) (any, error) {

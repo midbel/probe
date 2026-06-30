@@ -296,13 +296,14 @@ func (c *compiler) compileExpr() (Expr, error) {
 
 func (c *compiler) compileLambda() (Expr, error) {
 	c.next()
-	expr, err := c.compileExpr()
-	if err == nil {
-		expr = lambda{
-			expr: expr,
-		}
+	expr, err := c.compilePart()
+	if err != nil {
+		return nil, err
 	}
-	return expr, err
+	x := lambda{
+		expr: expr,
+	}
+	return x, nil
 }
 
 func (c *compiler) compileCall() (Expr, error) {
