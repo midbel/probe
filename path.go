@@ -188,6 +188,10 @@ type lambda struct {
 	expr Path
 }
 
+func (a lambda) All(in any) iter.Seq2[any, error] {
+	return a.expr.All(in)
+}
+
 func (a lambda) Eval(_ any) (any, error) {
 	return nil, nil
 }
@@ -233,6 +237,8 @@ func traverseMap(e Expr, in map[string]any) (any, error) {
 	if !ok {
 		if x.Alt == nil {
 			p = missed
+		} else if x.Name == "" {
+			p = x
 		} else {
 			p, _ = x.Alt.Eval(in)
 		}

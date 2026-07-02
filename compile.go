@@ -258,11 +258,16 @@ func (c *compiler) compileExpr() (Expr, error) {
 		step field
 		err  error
 	)
-	if !c.isIdentifier() {
-		return nil, syntaxError("identifier expected")
+	if c.done() {
+		return nil, syntaxError("unexpected end of query")
 	}
-	step.Name = c.currentLiteral()
-	c.next()
+	// if !c.isIdentifier() {
+	// 	return nil, syntaxError("identifier expected")
+	// }
+	if c.isIdentifier() {
+		step.Name = c.currentLiteral()
+		c.next()
+	}
 	if c.is(Call) {
 		step.Apply, err = c.compileCall()
 		if err != nil {

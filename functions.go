@@ -160,12 +160,32 @@ func runRange(val any, args []Expr) (any, error) {
 	return arr[fix:tix], nil
 }
 
-// arr:filter(:eq, 10)
+// arr:filter()
 func runFilter(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("filter takes one argument", len(args))
 	}
-	return discarded, nil
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("filter")
+	}
+	fn, ok := args[0].(lambda)
+	if !ok {
+		return nil, fmt.Errorf("argument to filter should be a lambda")
+	}
+	var tmp []any
+	for i := range arr {
+		var ok bool
+		for a := range fn.All(arr[i]) {
+			if ok = isDefined(a); ok {
+				break
+			}
+		}
+		if ok {
+			tmp = append(tmp, arr[i])
+		}
+	}
+	return tmp, nil
 }
 
 // returns val if some values in val pass the predicate otherwise discarded is returned
@@ -174,7 +194,29 @@ func runSome(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("some takes one argument", len(args))
 	}
-	return discarded, nil
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("some")
+	}
+	fn, ok := args[0].(lambda)
+	if !ok {
+		return nil, fmt.Errorf("argument to some should be a lambda")
+	}
+	for i := range arr {
+		var ok bool
+		for a := range fn.All(arr[i]) {
+			if ok = isDefined(a); ok {
+				break
+			}
+		}
+		if ok {
+			break
+		}
+	}
+	if !ok {
+		return discarded, nil
+	}
+	return val, nil
 }
 
 // returns val if all values in val pass the predicate otherwise discarded is returned
@@ -183,7 +225,26 @@ func runEvery(val any, args []Expr) (any, error) {
 	if len(args) != 1 {
 		return nil, invalidArgs("every takes one argument", len(args))
 	}
-	return discarded, nil
+	arr, ok := val.([]any)
+	if !ok {
+		return nil, arrayExpected("every")
+	}
+	fn, ok := args[0].(lambda)
+	if !ok {
+		return nil, fmt.Errorf("argument to some should be a lambda")
+	}
+	for i := range arr {
+		var ok bool
+		for a := range fn.All(arr[i]) {
+			if ok = isDefined(a); !ok {
+				break
+			}
+		}
+		if !ok {
+			return discarded, nil
+		}
+	}
+	return val, nil
 }
 
 func runEntries(val any, args []Expr) (any, error) {
