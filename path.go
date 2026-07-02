@@ -192,8 +192,18 @@ func (a lambda) All(in any) iter.Seq2[any, error] {
 	return a.expr.All(in)
 }
 
-func (a lambda) Eval(_ any) (any, error) {
-	return nil, nil
+func (a lambda) Eval(in any) (any, error) {
+	return a.isDefined(in), nil
+}
+
+func (a lambda) isDefined(in any) bool {
+	var ok bool
+	for x := range a.All(in) {
+		if ok = isDefined(x); ok {
+			break
+		}
+	}
+	return ok
 }
 
 func traverse(e Expr, in any) (any, error) {

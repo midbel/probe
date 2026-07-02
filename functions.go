@@ -175,12 +175,7 @@ func runFilter(val any, args []Expr) (any, error) {
 	}
 	var tmp []any
 	for i := range arr {
-		var ok bool
-		for a := range fn.All(arr[i]) {
-			if ok = isDefined(a); ok {
-				break
-			}
-		}
+		ok = fn.isDefined(arr[i])
 		if ok {
 			tmp = append(tmp, arr[i])
 		}
@@ -203,12 +198,7 @@ func runSome(val any, args []Expr) (any, error) {
 		return nil, fmt.Errorf("argument to some should be a lambda")
 	}
 	for i := range arr {
-		var ok bool
-		for a := range fn.All(arr[i]) {
-			if ok = isDefined(a); ok {
-				break
-			}
-		}
+		ok = fn.isDefined(arr[i])
 		if ok {
 			break
 		}
@@ -234,12 +224,7 @@ func runEvery(val any, args []Expr) (any, error) {
 		return nil, fmt.Errorf("argument to some should be a lambda")
 	}
 	for i := range arr {
-		var ok bool
-		for a := range fn.All(arr[i]) {
-			if ok = isDefined(a); !ok {
-				break
-			}
-		}
+		ok = fn.isDefined(arr[i])
 		if !ok {
 			return discarded, nil
 		}
