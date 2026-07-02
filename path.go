@@ -50,18 +50,6 @@ func (p single) collect(in any) (any, error) {
 	return p.Start.Eval(in)
 }
 
-type deep struct {
-	Start Expr
-}
-
-func (p deep) All(in any) iter.Seq2[any, error] {
-	return nil
-}
-
-func (p deep) collect(in any) (any, error) {
-	return nil, nil
-}
-
 type root struct {
 	base Path
 	next []Path
@@ -198,7 +186,10 @@ func (a lambda) Eval(in any) (any, error) {
 
 func (a lambda) isDefined(in any) bool {
 	var ok bool
-	for x := range a.All(in) {
+	for x, err := range a.All(in) {
+		if err != nil {
+			return false
+		}
 		if ok = isDefined(x); ok {
 			break
 		}
